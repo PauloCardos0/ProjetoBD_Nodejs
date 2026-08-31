@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Sistema Gerencial - Banco de Dados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { background: "#09090b", card: "#18181b", border: "#27272a", muted: "#a1a1aa", primary: "#3b82f6" } } } }
+    </script>
+   
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">SG</div>
+            <div>
+                <div class="brand-title">Sistema Gerencial</div>
+                <div class="brand-sub">Gestão & Banco de Dados</div>
+            </div>
+        </div>
+
+        <div class="nav-label">Principal</div>
+        <div class="sidebar-nav">
+            <button class="navbtn active" data-section="dashboard" onclick="show('dashboard')"><span
+                    class="nav-icon">⌂</span>Dashboard</button>
+        </div>
+
+        <div class="nav-label">Cadastros</div>
+        <div class="sidebar-nav">
+            <button class="navbtn" data-section="categorias" onclick="show('categorias')"><span
+                    class="nav-icon">▦</span>Categorias</button>
+            <button class="navbtn" data-section="fornecedores" onclick="show('fornecedores')"><span
+                    class="nav-icon">◈</span>Fornecedores</button>
+            <button class="navbtn" data-section="produtos" onclick="show('produtos')"><span
+                    class="nav-icon">□</span>Produtos</button>
+            <button class="navbtn" data-section="armazens" onclick="show('armazens')"><span
+                    class="nav-icon">⌂</span>Armazéns</button>
+            <button class="navbtn" data-section="estoques" onclick="show('estoques')"><span
+                    class="nav-icon">▤</span>Estoque</button>
+            <button class="navbtn" data-section="clientes" onclick="show('clientes')"><span
+                    class="nav-icon">♙</span>Clientes</button>
+            <button class="navbtn" data-section="funcionarios" onclick="show('funcionarios')"><span
+                    class="nav-icon">♙</span>Funcionários</button>
+        </div>
+
+        <div class="nav-label">Operações</div>
+        <div class="sidebar-nav">
+            <button class="navbtn" data-section="pedidos" onclick="show('pedidos')"><span
+                    class="nav-icon">▣</span>Pedidos</button>
+            <button class="navbtn" data-section="pagamentos" onclick="show('pagamentos')"><span
+                    class="nav-icon">$</span>Pagamentos</button>
+        </div>
+
+        <div class="sidebar-footer">Projeto de Banco de Dados</div>
+    </aside>
+
+    <div class="main-shell">
+        <div class="topbar">
+            <div class="breadcrumb">Sistema / <strong id="current-page">Dashboard</strong></div>
+            <div class="user-chip"><span>Ambiente administrativo</span>
+                <div class="user-avatar">AD</div>
+            </div>
+        </div>
+
+
+        <main class="max-w-[1500px] mx-auto p-5 space-y-8">
+
+            <section id="dashboard" class="space-y-8">
+                <header>
+                    <h2 class="text-3xl font-bold">Dashboard</h2>
+                    <p class="small">Resultados executados diretamente no PostgreSQL.</p>
+                </header>
+                <div id="dashboard-container" class="space-y-8"></div>
+            </section>
+
+            <section id="categorias" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Categorias</h2>
+                    <p class="small mt-2">Organize as categorias e departamentos dos produtos.</p>
+                </div>
+                <form id="form-cat" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveCategory(event)">
+                    <input type="hidden" id="cat-id">
+                    <div><label>Nome</label><input id="cat-nome" class="input-field" required></div>
+                    <div><label>Descrição</label><input id="cat-desc" class="input-field"></div>
+                    <div><label>Departamento</label><input id="cat-dep" class="input-field"></div>
+                    <div class="flex items-end gap-2"><button class="btn-primary">Salvar</button><button type="button"
+                            class="btn-secondary" onclick="resetForm('form-cat')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3 text-left">ID</th>
+                                <th class="p-3 text-left">Nome</th>
+                                <th class="p-3 text-left">Descrição</th>
+                                <th class="p-3 text-left">Departamento</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-cat"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="fornecedores" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Fornecedores</h2>
+                    <p class="small mt-2">Cadastre e mantenha os dados dos fornecedores.</p>
+                </div>
+                <form id="form-forn" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveFornecedor(event)">
+                    <input type="hidden" id="forn-id">
+                    <div><label>Nome*</label><input id="forn-nome" class="input-field" required></div>
+                    <div><label>Nome fantasia</label><input id="forn-fantasia" class="input-field"></div>
+                    <div><label>CPF/CNPJ*</label><input id="forn-doc" class="input-field" required></div>
+                    <div><label>Data cadastro*</label><input type="date" id="forn-data" class="input-field" required>
+                    </div>
+                    <div><label>Rua*</label><input id="forn-rua" class="input-field" required></div>
+                    <div><label>Número*</label><input id="forn-num" class="input-field" required></div>
+                    <div><label>Bairro*</label><input id="forn-bairro" class="input-field" required></div>
+                    <div><label>Complemento</label><input id="forn-comp" class="input-field"></div>
+                    <div><label>Cidade*</label><input id="forn-cidade" class="input-field" required></div>
+                    <div><label>Estado*</label><input id="forn-estado" class="input-field" required></div>
+                    <div><label>País*</label><input id="forn-pais" class="input-field" value="Brasil" required></div>
+                    <div><label>CEP*</label><input id="forn-cep" class="input-field" required></div>
+                    <div class="md:col-span-4 flex gap-2"><button class="btn-primary">Salvar fornecedor</button><button
+                            type="button" class="btn-secondary" onclick="resetForm('form-forn')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3 text-left">Nome</th>
+                                <th class="p-3">Documento</th>
+                                <th class="p-3">Cidade</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-forn"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="produtos" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Produtos</h2>
+                    <p class="small mt-2">Controle catálogo, preços, status e vínculos.</p>
+                </div>
+                <form id="form-prod" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveProduto(event)">
+                    <input type="hidden" id="prod-id">
+                    <div><label>Nome*</label><input id="prod-nome" class="input-field" required></div>
+                    <div><label>Descrição</label><input id="prod-desc" class="input-field"></div>
+                    <div><label>Marca</label><input id="prod-marca" class="input-field"></div>
+                    <div><label>Peso</label><input type="number" step="0.01" id="prod-peso" class="input-field"></div>
+                    <div><label>Data fabricação*</label><input type="date" id="prod-fab" class="input-field" required>
+                    </div>
+                    <div><label>Prazo garantia</label><input type="date" id="prod-garantia" class="input-field"></div>
+                    <div><label>Preço venda*</label><input type="number" step="0.01" id="prod-preco" class="input-field"
+                            required></div>
+                    <div><label>Preço mínimo*</label><input type="number" step="0.01" id="prod-min" class="input-field"
+                            required></div>
+                    <div><label>Status</label><select id="prod-status" class="input-field">
+                            <option>Disponível</option>
+                            <option>Indisponível</option>
+                            <option>Descontinuado</option>
+                        </select></div>
+                    <div><label>Categoria</label><select id="prod-cat" class="input-field"></select></div>
+                    <div><label>Fornecedor</label><select id="prod-forn" class="input-field"></select></div>
+                    <div class="flex items-end gap-2"><button class="btn-primary">Salvar produto</button><button
+                            type="button" class="btn-secondary" onclick="resetForm('form-prod')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3 text-left">Produto</th>
+                                <th class="p-3">Venda</th>
+                                <th class="p-3">Mínimo</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Categoria</th>
+                                <th class="p-3">Fornecedor</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-prod"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="armazens" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Armazéns</h2>
+                    <p class="small mt-2">Gerencie locais e capacidade de armazenamento.</p>
+                </div>
+                <form id="form-arm" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveArmazem(event)">
+                    <input type="hidden" id="arm-id">
+                    <div><label>Nome*</label><input id="arm-nome" class="input-field" required></div>
+                    <div><label>Capacidade máxima*</label><input type="number" id="arm-cap" class="input-field"
+                            required></div>
+                    <div><label>Data abertura*</label><input type="date" id="arm-data" class="input-field" required>
+                    </div>
+                    <div><label>Rua*</label><input id="arm-rua" class="input-field" required></div>
+                    <div><label>Número*</label><input id="arm-num" class="input-field" required></div>
+                    <div><label>Bairro*</label><input id="arm-bairro" class="input-field" required></div>
+                    <div><label>Cidade*</label><input id="arm-cidade" class="input-field" required></div>
+                    <div><label>Estado*</label><input id="arm-estado" class="input-field" required></div>
+                    <div><label>CEP*</label><input id="arm-cep" class="input-field" required></div>
+                    <div class="md:col-span-3 flex gap-2 items-end"><button class="btn-primary">Salvar
+                            armazém</button><button type="button" class="btn-secondary"
+                            onclick="resetForm('form-arm')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3 text-left">Nome</th>
+                                <th class="p-3">Capacidade</th>
+                                <th class="p-3">Cidade</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-arm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="estoques" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Estoque por Armazém</h2>
+                    <p class="small mt-2">Acompanhe níveis mínimos, atuais e disponíveis.</p>
+                </div>
+                <form id="form-est" class="card p-5 grid md:grid-cols-6 gap-3" onsubmit="saveEstoque(event)">
+                    <div><label>Produto</label><select id="est-prod" class="input-field" required></select></div>
+                    <div><label>Armazém</label><select id="est-arm" class="input-field" required></select></div>
+                    <div><label>Qtd mínima</label><input type="number" id="est-min" class="input-field" required></div>
+                    <div><label>Qtd atual</label><input type="number" id="est-atual" class="input-field" required></div>
+                    <div><label>Qtd disponível</label><input type="number" id="est-dis" class="input-field" required>
+                    </div>
+                    <div><label>Localização</label><input id="est-loc" class="input-field" required></div>
+                    <div class="md:col-span-6"><button class="btn-primary">Adicionar estoque</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">Produto</th>
+                                <th class="p-3">Armazém</th>
+                                <th class="p-3">Mínimo</th>
+                                <th class="p-3">Atual</th>
+                                <th class="p-3">Disponível</th>
+                                <th class="p-3">Local</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-est"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="clientes" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Clientes</h2>
+                    <p class="small mt-2">Cadastre pessoas físicas e jurídicas.</p>
+                </div>
+                <form id="form-cli" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveCliente(event)">
+                    <input type="hidden" id="cli-id">
+                    <div><label>Tipo</label><select id="cli-tipo" class="input-field" onchange="togglePessoa()">
+                            <option value="PF">Pessoa Física</option>
+                            <option value="PJ">Pessoa Jurídica</option>
+                        </select></div>
+                    <div><label>Nome*</label><input id="cli-nome" class="input-field" required></div>
+                    <div><label>Sobrenome*</label><input id="cli-sobrenome" class="input-field" required></div>
+                    <div><label>Nome social</label><input id="cli-social" class="input-field"></div>
+                    <div><label>Rua*</label><input id="cli-rua" class="input-field" required></div>
+                    <div><label>Número*</label><input id="cli-num" class="input-field" required></div>
+                    <div><label>Bairro*</label><input id="cli-bairro" class="input-field" required></div>
+                    <div><label>Complemento</label><input id="cli-comp" class="input-field"></div>
+                    <div><label>Cidade*</label><input id="cli-cidade" class="input-field" required></div>
+                    <div><label>Estado*</label><input id="cli-estado" class="input-field" required></div>
+                    <div><label>País*</label><input id="cli-pais" class="input-field" value="Brasil" required></div>
+                    <div><label>CEP*</label><input id="cli-cep" class="input-field" required></div>
+                    <div><label>Data cadastro*</label><input type="date" id="cli-cadastro" class="input-field" required>
+                    </div>
+                    <div><label>Data nascimento</label><input type="date" id="cli-nasc" class="input-field"></div>
+                    <div><label>Limite crédito</label><input type="number" step="0.01" id="cli-limite"
+                            class="input-field"></div>
+                    <div><label>Profissão</label><input id="cli-prof" class="input-field"></div>
+                    <div><label>Renda aproximada</label><input type="number" step="0.01" id="cli-renda"
+                            class="input-field"></div>
+                    <div><label>E-mail*</label><input type="email" id="cli-email" class="input-field" required></div>
+                    <div><label>Telefone</label><input id="cli-tel" class="input-field"></div>
+                    <div id="pf-fields" class="contents">
+                        <div><label>CPF*</label><input id="cli-cpf" class="input-field"></div>
+                        <div><label>RG*</label><input id="cli-rg" class="input-field"></div>
+                        <div><label>Estado civil*</label><input id="cli-civil" class="input-field"></div>
+                    </div>
+                    <div id="pj-fields" class="contents hidden">
+                        <div><label>CNPJ*</label><input id="cli-cnpj" class="input-field"></div>
+                        <div><label>Razão social*</label><input id="cli-razao" class="input-field"></div>
+                        <div><label>Nome fantasia</label><input id="cli-pjfantasia" class="input-field"></div>
+                        <div><label>Inscrição estadual*</label><input id="cli-ie" class="input-field"></div>
+                    </div>
+                    <div class="md:col-span-4 flex gap-2"><button class="btn-primary">Salvar cliente</button><button
+                            type="button" class="btn-secondary"
+                            onclick="resetForm('form-cli');togglePessoa()">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3 text-left">Nome</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Documento</th>
+                                <th class="p-3">E-mail</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-cli"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="funcionarios" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Funcionários</h2>
+                    <p class="small mt-2">Controle equipe, metas, salários e comissões.</p>
+                </div>
+                <form id="form-func" class="card p-5 grid md:grid-cols-4 gap-3" onsubmit="saveFuncionario(event)">
+                    <input type="hidden" id="fun-id">
+                    <div><label>Nome*</label><input id="fun-nome" class="input-field" required></div>
+                    <div><label>CPF*</label><input id="fun-cpf" class="input-field" required></div>
+                    <div><label>Data nascimento*</label><input type="date" id="fun-nasc" class="input-field" required>
+                    </div>
+                    <div><label>Data admissão*</label><input type="date" id="fun-adm" class="input-field" required>
+                    </div>
+                    <div><label>Salário*</label><input type="number" step="0.01" id="fun-sal" class="input-field"
+                            required></div>
+                    <div><label>Cargo*</label><input id="fun-cargo" class="input-field" required></div>
+                    <div><label>Rua*</label><input id="fun-rua" class="input-field" required></div>
+                    <div><label>Número*</label><input id="fun-num" class="input-field" required></div>
+                    <div><label>Bairro*</label><input id="fun-bairro" class="input-field" required></div>
+                    <div><label>Complemento</label><input id="fun-comp" class="input-field"></div>
+                    <div><label>Cidade*</label><input id="fun-cidade" class="input-field" required></div>
+                    <div><label>Estado*</label><input id="fun-estado" class="input-field" required></div>
+                    <div><label>CEP*</label><input id="fun-cep" class="input-field" required></div>
+                    <div><label>% comissão*</label><input type="number" step="0.01" id="fun-perc" class="input-field"
+                            required></div>
+                    <div><label>Meta mensal</label><input type="number" step="0.01" id="fun-meta" class="input-field">
+                    </div>
+                    <div><label>Data início*</label><input type="date" id="fun-ini" class="input-field" required></div>
+                    <div><label>Bônus gestão</label><input type="number" step="0.01" id="fun-bonus" class="input-field"
+                            value="0"></div>
+                    <div><label>E-mail</label><input type="email" id="fun-email" class="input-field"></div>
+                    <div><label>Telefone</label><input id="fun-tel" class="input-field"></div>
+                    <div class="md:col-span-4 flex gap-2"><button class="btn-primary">Salvar funcionário</button><button
+                            type="button" class="btn-secondary" onclick="resetForm('form-func')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3 text-left">Nome</th>
+                                <th class="p-3">Cargo</th>
+                                <th class="p-3">Salário</th>
+                                <th class="p-3">% Comissão</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-func"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="pedidos" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Pedidos</h2>
+                    <p class="small mt-2">Registre pedidos e seus respectivos produtos.</p>
+                </div>
+                <form id="form-ped" class="card p-5 space-y-5" onsubmit="savePedido(event)">
+                    <input type="hidden" id="ped-id">
+                    <div class="grid md:grid-cols-4 gap-3">
+                        <div><label>Cliente</label><select id="ped-cli" class="input-field" required></select></div>
+                        <div><label>Funcionário</label><select id="ped-func" class="input-field"></select></div>
+                        <div><label>Data pedido</label><input type="datetime-local" id="ped-data" class="input-field"
+                                required></div>
+                        <div><label>Prazo entrega</label><input type="date" id="ped-prazo" class="input-field" required>
+                        </div>
+                        <div><label>Canal</label><select id="ped-canal" class="input-field">
+                                <option>Online</option>
+                                <option>Digital</option>
+                            </select></div>
+                        <div><label>Status</label><select id="ped-status" class="input-field">
+                                <option>Pendente</option>
+                                <option>Processando</option>
+                                <option>Enviado</option>
+                                <option>Entregue</option>
+                                <option>Cancelado</option>
+                            </select></div>
+                        <div class="md:col-span-2"><label>Observação</label><input id="ped-obs" class="input-field">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold">Itens do pedido</h3><button type="button" class="btn-secondary"
+                                onclick="addItem()">+ Adicionar produto</button>
+                        </div>
+                        <div class="card table-wrap">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="p-2">Produto</th>
+                                        <th class="p-2">Qtd.</th>
+                                        <th class="p-2">Preço unit.</th>
+                                        <th class="p-2">Desconto %</th>
+                                        <th class="p-2">Total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itens-pedido"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 items-center"><span class="text-xl font-bold">Total: <span
+                                id="ped-total">R$ 0,00</span></span><button class="btn-primary">Salvar
+                            pedido</button><button type="button" class="btn-secondary"
+                            onclick="resetPedido()">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3">Funcionário</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Total</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-ped"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="pagamentos" class="section-hidden space-y-6">
+                <div>
+                    <h2 class="text-3xl font-bold">Pagamentos</h2>
+                    <p class="small mt-2">Acompanhe recebimentos, métodos e status.</p>
+                </div>
+                <form id="form-pag" class="card p-5 grid md:grid-cols-5 gap-3" onsubmit="savePagamento(event)">
+                    <input type="hidden" id="pag-id">
+                    <div><label>Pedido*</label><select id="pag-ped" class="input-field" required></select></div>
+                    <div><label>Valor*</label><input type="number" step="0.01" id="pag-valor" class="input-field"
+                            required></div>
+                    <div><label>Data*</label><input type="datetime-local" id="pag-data" class="input-field" required>
+                    </div>
+                    <div><label>Tipo*</label><select id="pag-tipo" class="input-field">
+                            <option>Dinheiro</option>
+                            <option>Cartão</option>
+                            <option>Pix</option>
+                        </select></div>
+                    <div><label>Status*</label><select id="pag-status" class="input-field">
+                            <option>Pendente</option>
+                            <option>Pago</option>
+                            <option>Cancelado</option>
+                        </select></div>
+                    <div class="md:col-span-5 flex gap-2"><button class="btn-primary">Salvar pagamento</button><button
+                            type="button" class="btn-secondary" onclick="resetForm('form-pag')">Limpar</button></div>
+                </form>
+                <div class="card table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Pedido</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3">Valor</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-pag"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 hidden bg-card border border-border px-5 py-3 rounded-lg shadow-xl">
+    </div>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+        const money = (v) =>
+            Number(v || 0).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL"
+            });
+
+        const esc = (v) =>
+            String(v ?? "").replace(/[&<>"']/g, (m) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+            }[m]));
+
+        const fmtDate = (v) => (v ? new Date(v).toLocaleDateString("pt-BR") : "-");
+        const fmtDateTime = (v) => (v ? new Date(v).toLocaleString("pt-BR") : "-");
+
+        function toast(msg) {
+            const toastEl = $("toast");
+            toastEl.textContent = msg;
+            toastEl.classList.remove("hidden");
+            setTimeout(() => toastEl.classList.add("hidden"), 2500);
+        }
+
+        async function api(url, opt = {}) {
+            const r = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(opt.headers || {})
+                },
+                ...opt
+            });
+
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(d.error || "Erro na operação");
+            return d;
+        }
+
+        async function remove(url, load) {
+            if (!confirm("Excluir este registro?")) return;
+
+            try {
+                await api(url, { method: "DELETE" });
+                toast("Excluído com sucesso");
+                load();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function resetForm(id) {
+            $(id).reset();
+            const hidden = $(id).querySelector("input[type=hidden]");
+            if (hidden) hidden.value = "";
+        }
+
+        function show(id) {
+            document.querySelectorAll("main>section").forEach((section) => {
+                section.classList.add("section-hidden");
+            });
+
+            $(id).classList.remove("section-hidden");
+
+            document.querySelectorAll(".navbtn").forEach((button) => {
+                button.classList.toggle("active", button.dataset.section === id);
+            });
+
+            const active = document.querySelector('.navbtn[data-section="' + id + '"]');
+            if (active) $("current-page").textContent = active.textContent.trim();
+
+            loadSection(id);
+        }
+
+        async function loadSection(id) {
+            try {
+                if (id === "dashboard") loadDashboard();
+                if (id === "categorias") loadCategorias();
+                if (id === "fornecedores") loadFornecedores();
+                if (id === "produtos") {
+                    await loadSelects();
+                    loadProdutos();
+                }
+                if (id === "armazens") loadArmazens();
+                if (id === "estoques") {
+                    await loadSelects();
+                    loadEstoques();
+                }
+                if (id === "clientes") loadClientes();
+                if (id === "funcionarios") loadFuncionarios();
+                if (id === "pedidos") {
+                    await loadSelects();
+                    loadPedidos();
+                    addItem();
+                }
+                if (id === "pagamentos") {
+                    await loadSelects();
+                    loadPagamentos();
+                }
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // CATEGORIA
+        async function loadCategorias() {
+            const d = await api("/api/categorias");
+            $("tb-cat").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_categoria}</td>
+                            <td class="p-3">${esc(x.nome)}</td>
+                            <td class="p-3">${esc(x.descricao)}</td>
+                            <td class="p-3">${esc(x.departamento)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editCat(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/categorias/${x.id_categoria}',loadCategorias)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function editCat(x) {
+            $("cat-id").value = x.id_categoria;
+            $("cat-nome").value = x.nome;
+            $("cat-desc").value = x.descricao || "";
+            $("cat-dep").value = x.departamento || "";
+            show("categorias");
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            const id = $("cat-id").value;
+            const b = {
+                nome: $("cat-nome").value,
+                descricao: $("cat-desc").value,
+                departamento: $("cat-dep").value
+            };
+
+            try {
+                await api(id ? "/api/categorias/" + id : "/api/categorias", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetForm("form-cat");
+                loadCategorias();
+                toast("Categoria salva");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // FORNECEDOR
+        async function loadFornecedores() {
+            const d = await api("/api/fornecedores");
+            $("tb-forn").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_fornecedor}</td>
+                            <td class="p-3">${esc(x.nome)}</td>
+                            <td class="p-3">${esc(x.cpf_cnpj)}</td>
+                            <td class="p-3">${esc(x.cidade)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editForn(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/fornecedores/${x.id_fornecedor}',loadFornecedores)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function fill(prefix, x, map) {
+            for (const [k, v] of Object.entries(map)) {
+                $(prefix + k).value = v ?? "";
+            }
+        }
+
+        function editForn(x) {
+            fill("forn-", x, {
+                id: "id_fornecedor",
+                nome: "nome",
+                fantasia: "nome_fantasia",
+                doc: "cpf_cnpj",
+                data: "data_cadastro",
+                rua: "rua",
+                num: "numero",
+                bairro: "bairro",
+                comp: "complemento",
+                cidade: "cidade",
+                estado: "estado",
+                pais: "pais",
+                cep: "cep"
+            });
+            show("fornecedores");
+        }
+
+        async function saveFornecedor(e) {
+            e.preventDefault();
+            const b = {
+                nome: $("forn-nome").value,
+                nome_fantasia: $("forn-fantasia").value,
+                cpf_cnpj: $("forn-doc").value,
+                data_cadastro: $("forn-data").value,
+                rua: $("forn-rua").value,
+                numero: $("forn-num").value,
+                bairro: $("forn-bairro").value,
+                complemento: $("forn-comp").value,
+                cidade: $("forn-cidade").value,
+                estado: $("forn-estado").value,
+                pais: $("forn-pais").value,
+                cep: $("forn-cep").value
+            };
+            const id = $("forn-id").value;
+
+            try {
+                await api(id ? "/api/fornecedores/" + id : "/api/fornecedores", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+                resetForm("form-forn");
+                loadFornecedores();
+                toast("Fornecedor salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // SELECTS
+        async function loadSelects() {
+            const s = await api("/api/selects");
+            window.S = s;
+
+            $("prod-cat").innerHTML = s.categorias
+                .map((x) => `<option value="${x.id_categoria}">${esc(x.nome)}</option>`)
+                .join("");
+
+            $("prod-forn").innerHTML =
+                `<option value="">Sem fornecedor</option>` +
+                s.fornecedores
+                    .map((x) => `<option value="${x.id_fornecedor}">${esc(x.nome)}</option>`)
+                    .join("");
+
+            $("est-prod").innerHTML = s.produtos
+                .map((x) => `<option value="${x.id_produto}" data-price="${x.preco_venda}">${esc(x.nome)}</option>`)
+                .join("");
+
+            $("est-arm").innerHTML = s.armazens
+                .map((x) => `<option value="${x.id_armazem}">${esc(x.nome)}</option>`)
+                .join("");
+
+            $("ped-cli").innerHTML =
+                `<option value="">Selecione</option>` +
+                s.clientes
+                    .map((x) => `<option value="${x.id_cliente}">${esc(x.nome + " " + x.sobrenome)}</option>`)
+                    .join("");
+
+            $("ped-func").innerHTML =
+                `<option value="">Sem funcionário</option>` +
+                s.funcionarios
+                    .map((x) => `<option value="${x.id_funcionario}">${esc(x.nome)}</option>`)
+                    .join("");
+
+            $("pag-ped").innerHTML = s.pedidos
+                .map((x) => `<option value="${x.id_pedido}">Pedido #${x.id_pedido}</option>`)
+                .join("");
+        }
+
+        // PRODUTO
+        async function loadProdutos() {
+            const d = await api("/api/produtos");
+            $("tb-prod").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_produto}</td>
+                            <td class="p-3">${esc(x.nome)}</td>
+                            <td class="p-3">${money(x.preco_venda)}</td>
+                            <td class="p-3">${money(x.preco_min)}</td>
+                            <td class="p-3">${esc(x.status)}</td>
+                            <td class="p-3">${esc(x.categoria_nome)}</td>
+                            <td class="p-3">${esc(x.fornecedor_nome)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editProd(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/produtos/${x.id_produto}',loadProdutos)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function editProd(x) {
+            fill("prod-", x, {
+                id: "id_produto",
+                nome: "nome",
+                desc: "descricao",
+                marca: "marca",
+                peso: "peso",
+                fab: "data_fab",
+                garantia: "prazo_garantia",
+                preco: "preco_venda",
+                min: "preco_min",
+                status: "status",
+                cat: "id_categoria",
+                forn: "id_fornecedor"
+            });
+            show("produtos");
+        }
+
+        async function saveProduto(e) {
+            e.preventDefault();
+            const id = $("prod-id").value;
+            const b = {
+                nome: $("prod-nome").value,
+                descricao: $("prod-desc").value,
+                marca: $("prod-marca").value,
+                peso: $("prod-peso").value,
+                data_fab: $("prod-fab").value,
+                prazo_garantia: $("prod-garantia").value,
+                preco_venda: $("prod-preco").value,
+                preco_min: $("prod-min").value,
+                status: $("prod-status").value,
+                id_categoria: $("prod-cat").value,
+                id_fornecedor: $("prod-forn").value
+            };
+
+            try {
+                await api(id ? "/api/produtos/" + id : "/api/produtos", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetForm("form-prod");
+                loadProdutos();
+                toast("Produto salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // ARMAZEM
+        async function loadArmazens() {
+            const d = await api("/api/armazens");
+            $("tb-arm").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_armazem}</td>
+                            <td class="p-3">${esc(x.nome)}</td>
+                            <td class="p-3">${x.capacidade_max}</td>
+                            <td class="p-3">${esc(x.cidade)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editArm(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/armazens/${x.id_armazem}',loadArmazens)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function editArm(x) {
+            fill("arm-", x, {
+                id: "id_armazem",
+                nome: "nome",
+                cap: "capacidade_max",
+                data: "data_abbertura",
+                rua: "rua",
+                num: "numero",
+                bairro: "bairro",
+                cidade: "cidade",
+                estado: "estado",
+                cep: "cep"
+            });
+            show("armazens");
+        }
+
+        async function saveArmazem(e) {
+            e.preventDefault();
+            const id = $("arm-id").value;
+            const b = {
+                nome: $("arm-nome").value,
+                capacidade_max: $("arm-cap").value,
+                data_abbertura: $("arm-data").value,
+                rua: $("arm-rua").value,
+                numero: $("arm-num").value,
+                bairro: $("arm-bairro").value,
+                cidade: $("arm-cidade").value,
+                estado: $("arm-estado").value,
+                cep: $("arm-cep").value
+            };
+
+            try {
+                await api(id ? "/api/armazens/" + id : "/api/armazens", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetForm("form-arm");
+                loadArmazens();
+                toast("Armazém salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // ESTOQUE
+        async function loadEstoques() {
+            const d = await api("/api/estoques");
+            $("tb-est").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${esc(x.produto_nome)}</td>
+                            <td class="p-3">${esc(x.armazem_nome)}</td>
+                            <td class="p-3">${x.qtd_min_dis}</td>
+                            <td class="p-3">${x.qtd_atual}</td>
+                            <td class="p-3">${x.qtd_dis}</td>
+                            <td class="p-3">${esc(x.loc_fisica)}</td>
+                            <td class="p-3">
+                                <button class="btn-danger" onclick="remove('/api/estoques/${x.id_produto}/${x.id_armazem}',loadEstoques)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        async function saveEstoque(e) {
+            e.preventDefault();
+            const b = {
+                id_produto: $("est-prod").value,
+                id_armazem: $("est-arm").value,
+                qtd_min_dis: $("est-min").value,
+                qtd_atual: $("est-atual").value,
+                qtd_dis: $("est-dis").value,
+                loc_fisica: $("est-loc").value
+            };
+
+            try {
+                await api("/api/estoques", {
+                    method: "POST",
+                    body: JSON.stringify(b)
+                });
+
+                e.target.reset();
+                loadEstoques();
+                toast("Estoque salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // CLIENTE
+        function togglePessoa() {
+            const pj = $("cli-tipo").value === "PJ";
+            $("pf-fields").classList.toggle("hidden", pj);
+            $("pj-fields").classList.toggle("hidden", !pj);
+
+            ["cli-cpf", "cli-rg", "cli-civil"].forEach((id) => {
+                $(id).required = !pj;
+            });
+
+            ["cli-cnpj", "cli-razao", "cli-ie"].forEach((id) => {
+                $(id).required = pj;
+            });
+        }
+
+        async function loadClientes() {
+            const d = await api("/api/clientes");
+            $("tb-cli").innerHTML = d
+                .map((x) => {
+                    const pj = !!x.cnpj;
+                    return `
+                        <tr>
+                            <td class="p-3">${x.id_cliente}</td>
+                            <td class="p-3">${esc(x.nome + " " + x.sobrenome)}</td>
+                            <td class="p-3">${pj ? "PJ" : "PF"}</td>
+                            <td class="p-3">${esc(pj ? x.cnpj : x.cpf)}</td>
+                            <td class="p-3">${esc(x.email)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editCli(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/clientes/${x.id_cliente}',loadClientes)">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                })
+                .join("");
+        }
+
+        function editCli(x) {
+            $("cli-id").value = x.id_cliente;
+            $("cli-tipo").value = x.cnpj ? "PJ" : "PF";
+            togglePessoa();
+
+            fill("cli-", x, {
+                nome: "nome",
+                sobrenome: "sobrenome",
+                social: "nome_social",
+                rua: "rua",
+                num: "numero",
+                bairro: "bairro",
+                comp: "complemento",
+                cidade: "cidade",
+                estado: "estado",
+                pais: "pais",
+                cep: "cep",
+                cadastro: "data_cadastro",
+                nasc: "data_nasc",
+                limite: "lim_credito",
+                prof: "profissao",
+                renda: "renda_aprox",
+                email: "email",
+                tel: "telefone",
+                cpf: "cpf",
+                rg: "rg",
+                civil: "estado_civil",
+                cnpj: "cnpj",
+                razao: "razao_social",
+                pjfantasia: "pj_nome_fantasia",
+                ie: "insc_estadual"
+            });
+            show("clientes");
+        }
+
+        async function saveCliente(e) {
+            e.preventDefault();
+            const pj = $("cli-tipo").value === "PJ";
+            const id = $("cli-id").value;
+            const b = {
+                tipo_pessoa: $("cli-tipo").value,
+                nome: $("cli-nome").value,
+                sobrenome: $("cli-sobrenome").value,
+                nome_social: $("cli-social").value,
+                rua: $("cli-rua").value,
+                numero: $("cli-num").value,
+                bairro: $("cli-bairro").value,
+                complemento: $("cli-comp").value,
+                cidade: $("cli-cidade").value,
+                estado: $("cli-estado").value,
+                pais: $("cli-pais").value,
+                cep: $("cli-cep").value,
+                data_cadastro: $("cli-cadastro").value,
+                data_nasc: $("cli-nasc").value,
+                lim_credito: $("cli-limite").value,
+                profissao: $("cli-prof").value,
+                renda_aprox: $("cli-renda").value,
+                email: $("cli-email").value,
+                telefone: $("cli-tel").value,
+                cpf: $("cli-cpf").value,
+                rg: $("cli-rg").value,
+                estado_civil: $("cli-civil").value,
+                cnpj: $("cli-cnpj").value,
+                razao_social: $("cli-razao").value,
+                pj_nome_fantasia: $("cli-pjfantasia").value,
+                insc_estadual: $("cli-ie").value
+            };
+
+            try {
+                await api(id ? "/api/clientes/" + id : "/api/clientes", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                if (b.telefone && !id) {
+                    await api(`/api/clientes/${id || ""}/telefone`, {
+                        method: "POST",
+                        body: JSON.stringify({ telefone: b.telefone })
+                    }).catch(() => {});
+                }
+
+                resetForm("form-cli");
+                togglePessoa();
+                loadClientes();
+                toast("Cliente salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // FUNCIONÁRIO
+        async function loadFuncionarios() {
+            const d = await api("/api/funcionarios");
+            $("tb-func").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_funcionario}</td>
+                            <td class="p-3">${esc(x.nome)}</td>
+                            <td class="p-3">${esc(x.cargo)}</td>
+                            <td class="p-3">${money(x.salario)}</td>
+                            <td class="p-3">${x.perc_comp}%</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editFunc(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/funcionarios/${x.id_funcionario}',loadFuncionarios)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function editFunc(x) {
+            fill("fun-", x, {
+                id: "id_funcionario",
+                nome: "nome",
+                cpf: "cpf",
+                nasc: "data_nasc",
+                adm: "data_adm",
+                sal: "salario",
+                cargo: "cargo",
+                rua: "rua",
+                num: "numero",
+                bairro: "bairro",
+                comp: "complemento",
+                cidade: "cidade",
+                estado: "estado",
+                cep: "cep",
+                perc: "perc_comp",
+                meta: "meta_mensal",
+                ini: "data_ini_func",
+                bonus: "val_bonus_gest",
+                email: "email",
+                tel: "telefone"
+            });
+            show("funcionarios");
+        }
+
+        async function saveFuncionario(e) {
+            e.preventDefault();
+            const id = $("fun-id").value;
+            const b = {
+                nome: $("fun-nome").value,
+                cpf: $("fun-cpf").value,
+                data_nasc: $("fun-nasc").value,
+                data_adm: $("fun-adm").value,
+                salario: $("fun-sal").value,
+                cargo: $("fun-cargo").value,
+                rua: $("fun-rua").value,
+                numero: $("fun-num").value,
+                bairro: $("fun-bairro").value,
+                complemento: $("fun-comp").value,
+                cidade: $("fun-cidade").value,
+                estado: $("fun-estado").value,
+                cep: $("fun-cep").value,
+                perc_comp: $("fun-perc").value,
+                meta_mensal: $("fun-meta").value,
+                data_ini_func: $("fun-ini").value,
+                val_bonus_gest: $("fun-bonus").value,
+                email: $("fun-email").value,
+                telefone: $("fun-tel").value
+            };
+
+            try {
+                await api(id ? "/api/funcionarios/" + id : "/api/funcionarios", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetForm("form-func");
+                loadFuncionarios();
+                toast("Funcionário salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // PEDIDO
+        let items = [];
+
+        function addItem(item = {}) {
+            const id = Date.now() + Math.random();
+            items.push({
+                row: id,
+                id_produto: item.id_produto || "",
+                qtd_comp: item.qtd_comp || 1,
+                preco_unit: item.preco_unit || "",
+                desconto: item.desconto || 0
+            });
+            renderItems();
+        }
+
+        function renderItems() {
+            const products = window.S?.produtos || [];
+            $("itens-pedido").innerHTML = items
+                .map(
+                    (x, i) => `
+                        <tr data-row="${x.row}">
+                            <td class="p-2">
+                                <select class="input-field" onchange="itemProduct(${i},this.value)">
+                                    <option value="">Produto</option>
+                                    ${products
+                                        .map(
+                                            (p) => `
+                                                <option value="${p.id_produto}" ${String(x.id_produto) === String(p.id_produto) ? "selected" : ""}>
+                                                    ${esc(p.nome)}
+                                                </option>
+                                            `
+                                        )
+                                        .join("")}
+                                </select>
+                            </td>
+                            <td class="p-2">
+                                <input type="number" min="1" class="input-field" value="${x.qtd_comp}" onchange="items[${i}].qtd_comp=this.value;calcItems()">
+                            </td>
+                            <td class="p-2">
+                                <input type="number" step="0.01" class="input-field" value="${x.preco_unit}" onchange="items[${i}].preco_unit=this.value;calcItems()">
+                            </td>
+                            <td class="p-2">
+                                <input type="number" step="0.01" min="0" class="input-field" value="${x.desconto}" onchange="items[${i}].desconto=this.value;calcItems()">
+                            </td>
+                            <td class="p-2 item-total">
+                                ${money(Number(x.qtd_comp) * Number(x.preco_unit || 0) * (1 - Number(x.desconto || 0) / 100))}
+                            </td>
+                            <td class="p-2">
+                                <button type="button" class="btn-danger" onclick="items.splice(${i},1);renderItems()">X</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+
+            calcItems();
+        }
+
+        function itemProduct(i, v) {
+            items[i].id_produto = v;
+            const p = (window.S?.produtos || []).find(
+                (x) => String(x.id_produto) === String(v)
+            );
+
+            if (p) items[i].preco_unit = p.preco_venda;
+            renderItems();
+        }
+
+        function calcItems() {
+            const total = items.reduce(
+                (soma, x) =>
+                    soma +
+                    Number(x.qtd_comp) *
+                        Number(x.preco_unit || 0) *
+                        (1 - Number(x.desconto || 0) / 100),
+                0
+            );
+            $("ped-total").textContent = money(total);
+        }
+
+        async function loadPedidos() {
+            const d = await api("/api/pedidos");
+            $("tb-ped").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_pedido}</td>
+                            <td class="p-3">${esc(x.cliente_nome)}</td>
+                            <td class="p-3">${esc(x.funcionario_nome)}</td>
+                            <td class="p-3">${fmtDateTime(x.data_pedido)}</td>
+                            <td class="p-3">${esc(x.status)}</td>
+                            <td class="p-3">${money(x.total)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick="editPedido(${x.id_pedido})">Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/pedidos/${x.id_pedido}',loadPedidos)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        async function editPedido(id) {
+            const d = await api("/api/pedidos/" + id);
+            $("ped-id").value = id;
+
+            for (const [k, v] of Object.entries({
+                cli: d.pedido.id_cliente,
+                func: d.pedido.id_funcionario,
+                data: d.pedido.data_pedido?.slice(0, 16),
+                prazo: d.pedido.prazo_entrega,
+                canal: d.pedido.canal_compra,
+                status: d.pedido.status,
+                obs: d.pedido.obs
+            })) {
+                $("ped-" + k).value = v ?? "";
+            }
+
+            items = d.itens.map((x) => ({
+                row: Date.now() + Math.random(),
+                id_produto: x.id_produto,
+                qtd_comp: x.qtd_comp,
+                preco_unit: x.preco_unit,
+                desconto: x.desconto
+            }));
+
+            renderItems();
+        }
+
+        async function savePedido(e) {
+            e.preventDefault();
+
+            if (!items.length || items.some((x) => !x.id_produto)) {
+                alert("Adicione pelo menos um produto válido.");
+                return;
+            }
+
+            const id = $("ped-id").value;
+            const b = {
+                id_cliente: $("ped-cli").value,
+                id_funcionario: $("ped-func").value,
+                data_pedido: $("ped-data").value,
+                prazo_entrega: $("ped-prazo").value,
+                canal_compra: $("ped-canal").value,
+                status: $("ped-status").value,
+                obs: $("ped-obs").value,
+                itens: items
+            };
+
+            try {
+                await api(id ? "/api/pedidos/" + id : "/api/pedidos", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetPedido();
+                loadPedidos();
+                await loadSelects();
+                toast("Pedido salvo com seus itens");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function resetPedido() {
+            resetForm("form-ped");
+            items = [];
+            addItem();
+            $("ped-total").textContent = money(0);
+        }
+
+        // PAGAMENTO
+        async function loadPagamentos() {
+            const d = await api("/api/pagamentos");
+            $("tb-pag").innerHTML = d
+                .map(
+                    (x) => `
+                        <tr>
+                            <td class="p-3">${x.id_pagamento}</td>
+                            <td class="p-3">#${x.id_pedido}</td>
+                            <td class="p-3">${esc(x.cliente_nome)}</td>
+                            <td class="p-3">${money(x.valor)}</td>
+                            <td class="p-3">${fmtDateTime(x.data_pag)}</td>
+                            <td class="p-3">${esc(x.tipo)}</td>
+                            <td class="p-3">${esc(x.status)}</td>
+                            <td class="p-3 text-center">
+                                <button class="btn-warning mr-2" onclick='editPag(${JSON.stringify(x)})'>Editar</button>
+                                <button class="btn-danger" onclick="remove('/api/pagamentos/${x.id_pagamento}',loadPagamentos)">Excluir</button>
+                            </td>
+                        </tr>
+                    `
+                )
+                .join("");
+        }
+
+        function editPag(x) {
+            fill("pag-", x, {
+                id: "id_pagamento",
+                ped: "id_pedido",
+                valor: "valor",
+                data: "data_pag",
+                tipo: "tipo",
+                status: "status"
+            });
+            $("pag-data").value = x.data_pag?.slice(0, 16) || "";
+            show("pagamentos");
+        }
+
+        async function savePagamento(e) {
+            e.preventDefault();
+            const id = $("pag-id").value;
+            const b = {
+                id_pedido: $("pag-ped").value,
+                valor: $("pag-valor").value,
+                data_pag: $("pag-data").value,
+                tipo: $("pag-tipo").value,
+                status: $("pag-status").value
+            };
+
+            try {
+                await api(id ? "/api/pagamentos/" + id : "/api/pagamentos", {
+                    method: id ? "PUT" : "POST",
+                    body: JSON.stringify(b)
+                });
+
+                resetForm("form-pag");
+                loadPagamentos();
+                toast("Pagamento salvo");
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // DASHBOARD
+        async function tableReport(title, url, cols, extra = "") {
+            try {
+                const d = await api(url);
+                return `
+                    <div class="card overflow-hidden">
+                        <div class="p-5 border-b border-border">
+                            <h3 class="text-xl font-semibold">${title}</h3>
+                            <p class="small">${extra}</p>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        ${cols.map((c) => `<th class="p-3 text-left">${c.label}</th>`).join("")}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${
+                                        d.length
+                                            ? d
+                                                  .map(
+                                                      (r) => `
+                                                        <tr>
+                                                            ${cols
+                                                                .map(
+                                                                    (c) =>
+                                                                        `<td class="p-3">${c.money ? money(r[c.key]) : c.date ? fmtDate(r[c.key]) : esc(r[c.key])}</td>`
+                                                                )
+                                                                .join("")}
+                                                        </tr>
+                                                    `
+                                                  )
+                                                  .join("")
+                                            : `<tr><td colspan="${cols.length}" class="p-5 text-center small">Nenhum resultado.</td></tr>`
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                return `<div class="card p-5 text-red-400">Erro: ${esc(e.message)}</div>`;
+            }
+        }
+
+        async function loadDashboard() {
+            const c = $("dashboard-container");
+            c.innerHTML = "Carregando...";
+
+            let h = "";
+
+            h += await tableReport(
+                "1. Produtos acima da média da categoria",
+                "/api/relatorios/q1",
+                [
+                    { key: "categoria", label: "Categoria" },
+                    { key: "produto", label: "Produto" },
+                    { key: "quantidade_total_vendida", label: "Qtd. total vendida" },
+                    { key: "media_vendas_categoria", label: "Média da categoria" },
+                    { key: "diferenca", label: "Diferença" }
+                ],
+                "Ordenado pela diferença decrescente."
+            );
+
+            h += `
+                <div class="card overflow-hidden">
+                    <div class="p-5 border-b border-border">
+                        <h3 class="text-xl font-semibold">2. Clientes que adquiriram todos os produtos disponíveis de uma categoria</h3>
+                        <div class="flex gap-2 mt-3">
+                            <select id="dash-cat" class="input-field max-w-sm">
+                                ${(window.S?.categorias || [])
+                                    .map((x) => `<option value="${x.id_categoria}">${esc(x.nome)}</option>`)
+                                    .join("")}
+                            </select>
+                            <button class="btn-primary" onclick="loadQ2()">Consultar</button>
+                        </div>
+                    </div>
+                    <div id="q2-box" class="p-5 small">Selecione uma categoria.</div>
+                </div>
+            `;
+
+            h += await tableReport(
+                "3. Estoque abaixo do mínimo por armazém",
+                "/api/relatorios/q3",
+                [
+                    { key: "id_armazem", label: "Código" },
+                    { key: "nome", label: "Armazém" },
+                    { key: "cidade", label: "Cidade" },
+                    { key: "qtd_under_min", label: "Qtd. abaixo do mínimo" },
+                    { key: "qtd_media_disp", label: "Média disponível" },
+                    { key: "preco_medio", label: "Preço médio", money: true }
+                ],
+                "Somente produtos disponíveis e acima do preço médio geral."
+            );
+
+            h += await tableReport(
+                "4. Desempenho dos funcionários e comissão",
+                "/api/relatorios/q4",
+                [
+                    { key: "funcionario", label: "Funcionário" },
+                    { key: "total_vendido", label: "Total vendido", money: true },
+                    { key: "categoria_maior_faturamento", label: "Maior faturamento" },
+                    { key: "percentual_comissao", label: "% comissão" },
+                    { key: "comissao", label: "Comissão", money: true },
+                    { key: "salario_final", label: "Salário final", money: true }
+                ],
+                "Ordenado pelo salário final decrescente."
+            );
+
+            h += await tableReport("5. Desempenho por Método de Pagamento", "/api/relatorios/q5", [
+                { key: 'tipo_pagamento', label: 'Tipo Pagamento' }, 
+                { key: 'qtd_pedidos_pagos', label: 'Qtd Pedidos' }, 
+                { key: 'qtd_total_produtos', label: 'Produtos Vendidos' }, 
+                { key: 'valor_total_recebido', label: 'Total Recebido', isCurrency: true, money: true }, 
+                { key: 'ticket_medio', label: 'Ticket Médio', isCurrency: true, money: true },
+                { key: 'percentual_total', label: '% do Total' }
+            ],
+            "Ordedado pelo valorr total recebido em ordem decrescente."
+        );
+
+            h += await tableReport("6. Receita por canal e forma de pagamento", "/api/relatorios/q6", [
+                { key: "canal_compra", label: "Canal" },
+                { key: "metodo_pagamento", label: "Pagamento" },
+                { key: "qtd_pedidos", label: "Pedidos" },
+                { key: "receita_total", label: "Receita", money: true },
+                { key: "ticket_medio", label: "Ticket médio", money: true }
+            ]);
+
+            c.innerHTML = h;
+        }
+
+        async function loadQ2() {
+            const id = $("dash-cat").value;
+            if (!id) return;
+
+            const d = await api("/api/relatorios/q2/" + id);
+            $("q2-box").innerHTML = `
+                <div class="table-wrap">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr>
+                                <th class="p-3 text-left">Cliente</th>
+                                <th class="p-3">Produtos distintos</th>
+                                <th class="p-3">Total gasto</th>
+                                <th class="p-3">Última compra</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${
+                                d.length
+                                    ? d
+                                          .map(
+                                              (x) => `
+                                                <tr>
+                                                    <td class="p-3">${esc(x.cliente)}</td>
+                                                    <td class="p-3">${x.qtd_produtos_distintos}</td>
+                                                    <td class="p-3">${money(x.total_gasto)}</td>
+                                                    <td class="p-3">${fmtDate(x.ultima_compra)}</td>
+                                                </tr>
+                                            `
+                                          )
+                                          .join("")
+                                    : `<tr><td colspan="4" class="p-5 text-center small">Nenhum cliente encontrado.</td></tr>`
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // INIT
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                await loadSelects();
+                togglePessoa();
+                show("dashboard");
+            } catch (e) {
+                alert("Não foi possível conectar ao backend: " + e.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
