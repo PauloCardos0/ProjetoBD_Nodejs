@@ -41,185 +41,266 @@ app.get("/api/relatorios/q1", async (req, res) => {
     try {
         const sql = `
             WITH total_produto AS (
-                SELECT pp.id_produto, p.id_categoria, SUM(pp.qtd_comp) AS total_produtos
-                FROM Pedido_Produto pp
-                JOIN Produto p ON p.id_produto = pp.id_produto
-                GROUP BY pp.id_produto, p.id_categoria
+                SELECT pd_pr3.id_produto, pr3.id_categoria, SUM(pd_pr3.qtd_comp)
+                AS total_produtos
+                FROM Pedido_Produto pd_pr3
+                JOIN Produto pr3 ON pr3.id_produto = pd_pr3.id_produto
+                GROUP BY pd_pr3.id_produto, pr3.id_categoria
             ),
             medias AS (
-                SELECT id_categoria, AVG(total_produtos) AS media
-                FROM total_produto
-                GROUP BY id_categoria
+                SELECT tp.id_categoria, AVG(tp.total_produtos) AS media
+                FROM total_produto tp
+                GROUP BY tp.id_categoria
             )
-            SELECT c.nome AS categoria, p.nome AS produto,
-                   SUM(pp.qtd_comp) AS quantidade_total_vendida,
-                   ROUND(m.media, 2) AS media_vendas_categoria,
-                   ROUND(SUM(pp.qtd_comp) - m.media, 2) AS diferenca
-            FROM Produto p
-            JOIN Pedido_Produto pp ON p.id_produto = pp.id_produto
-            JOIN Categoria c ON c.id_categoria = p.id_categoria
-            JOIN medias m ON m.id_categoria = p.id_categoria
-            GROUP BY p.id_produto, p.nome, c.id_categoria, c.nome, m.media
-            HAVING SUM(pp.qtd_comp) > m.media
+            SELECT ct.nome AS categoria,
+                   pr.nome AS produto,
+                   SUM(pd_pr.qtd_comp) AS soma,
+                   m.media,
+                   SUM(pd_pr.qtd_comp) - m.media AS diferenca
+            FROM Produto pr
+            JOIN Pedido_Produto pd_pr ON pr.id_produto = pd_pr.id_produto
+            JOIN Categoria ct ON ct.id_categoria = pr.id_categoria
+            JOIN medias m ON m.id_categoria = pr.id_categoria
+            GROUP BY pr.id_produto, ct.id_categoria, m.media
+            HAVING SUM(pd_pr.qtd_comp) > m.media
             ORDER BY diferenca DESC;
         `;
-        res.json((await db.query(sql)).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
-app.get("/api/relatorios/q2/:categoria", async (req, res) => {
+app.get("/api/relatorios/q2", async (req, res) => {
     try {
         const sql = `
-            SELECT c.nome || ' ' || c.sobrenome AS cliente,
-                   COUNT(DISTINCT p.id_produto) AS qtd_produtos_distintos,
-                   SUM(pp.valor_final) AS total_gasto,
-                   MAX(pe.data_pedido) AS ultima_compra
+            SELECT c.nome,
+                   COUNT(DISTINCT pr3.id_produto) AS qtd_prod_distc,
+                   SUM(pd_pr3.valor_final) AS total_gasto,
+                   MAX(data_pedido) AS ultima_compra
             FROM Cliente c
-            JOIN Pedido pe ON pe.id_cliente = c.id_cliente
-            JOIN Pedido_Produto pp ON pp.id_pedido = pe.id_pedido
-            JOIN Produto p ON p.id_produto = pp.id_produto
-            WHERE p.id_categoria = $1
-              AND NOT EXISTS (
-                  SELECT p2.id_produto
-                  FROM Produto p2
-                  WHERE p2.id_categoria = $1
-                    AND p2.status = 'Disponível'
-                  EXCEPT
-                  SELECT pp2.id_produto
-                  FROM Pedido_Produto pp2
-                  JOIN Pedido pe2 ON pe2.id_pedido = pp2.id_pedido
-                  WHERE pe2.id_cliente = c.id_cliente
-                    AND pp2.id_produto IN (
-                        SELECT p3.id_produto
-                        FROM Produto p3
-                        WHERE p3.id_categoria = $1
-                    )
-              )
-            GROUP BY c.id_cliente, c.nome, c.sobrenome
-            ORDER BY total_gasto DESC;
+            JOIN Pedido pd3 ON c.id_Cliente = pd3.id_cliente
+            JOIN Pedido_Produto pd_pr3 ON pd_pr3.id_pedido = pd3.id_pedido
+            JOIN Produto pr3 ON pr3.id_produto = pd_pr3.id_produto
+            WHERE pr3.id_categoria = 1 AND
+            NOT EXISTS(
+                SELECT pd_pr2.id_produto FROM Pedido_Produto pd_pr2
+                JOIN Produto pd2 ON pd_pr2.id_produto = pd2.id_produto
+                WHERE pd2.id_categoria = 1
+                EXCEPT
+                SELECT pd_pr.id_produto FROM Pedido_Produto pd_pr
+                JOIN Pedido pr ON pd_pr.id_pedido = pr.id_pedido
+                JOIN Produto pd ON pd_pr.id_produto = pd.id_produto
+                WHERE c.id_cliente = pr.id_cliente AND pd.id_categoria = 1
+            )
+            GROUP BY c.id_cliente;
         `;
-        res.json((await db.query(sql, [req.params.categoria])).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
 app.get("/api/relatorios/q3", async (req, res) => {
     try {
         const sql = `
-            SELECT a.id_armazem, a.nome, a.cidade,
-                   COUNT(*) AS qtd_under_min,
-                   ROUND(AVG(pa.qtd_dis), 2) AS qtd_media_disp,
-                   ROUND(AVG(p.preco_venda), 2) AS preco_medio
-            FROM Armazem a
-            JOIN Produto_Armazem pa ON a.id_armazem = pa.id_armazem
-            JOIN Produto p ON p.id_produto = pa.id_produto
-            WHERE pa.qtd_atual < pa.qtd_min_dis
-              AND p.status = 'Disponível'
-              AND p.preco_venda > (SELECT AVG(p2.preco_venda) FROM Produto p2)
-            GROUP BY a.id_armazem, a.nome, a.cidade
+            SELECT ar.id_armazem, ar.nome, ar.cidade, COUNT(*) qtd_under_min,
+                   AVG(pd_am.qtd_dis) AS qtd_media_disp,
+                   AVG(pr.preco_venda) AS preco_medio
+            FROM Armazem ar
+            JOIN Produto_Armazem pd_am ON ar.id_armazem = pd_am.id_armazem
+            JOIN Produto pr ON pr.id_produto = pd_am.id_produto
+            WHERE qtd_atual < qtd_min_dis AND pr.status = 'Disponível' AND
+                  pr.preco_venda > (
+                      SELECT AVG(pr2.preco_venda) FROM Produto pr2
+                  )
+            GROUP BY ar.id_armazem
             ORDER BY qtd_under_min DESC;
         `;
-        res.json((await db.query(sql)).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
 app.get("/api/relatorios/q4", async (req, res) => {
     try {
         const sql = `
             WITH best_category AS (
-                SELECT f.id_funcionario, p.id_categoria,
+                SELECT fr.id_funcionario,
+                       pr.id_categoria,
                        ROW_NUMBER() OVER (
-                           PARTITION BY f.id_funcionario
-                           ORDER BY SUM(pp.valor_final) DESC
-                       ) AS posicao
-                FROM Funcionario f
-                JOIN Pedido pe ON pe.id_funcionario = f.id_funcionario
-                JOIN Pedido_Produto pp ON pp.id_pedido = pe.id_pedido
-                JOIN Produto p ON p.id_produto = pp.id_produto
-                GROUP BY f.id_funcionario, p.id_categoria
+                           PARTITION BY fr.id_funcionario
+                           ORDER BY SUM(pd_pr.valor_final) DESC) AS posicao
+                FROM Funcionario fr
+                JOIN Pedido pd ON pd.id_funcionario = fr.id_funcionario
+                JOIN Pedido_Produto pd_pr ON pd_pr.id_pedido = pd.id_pedido
+                JOIN Produto pr ON pr.id_produto = pd_pr.id_produto
+                GROUP BY fr.id_funcionario, pr.id_categoria
             ),
+
             sum_sell_func AS (
-                SELECT f.id_funcionario,
-                       COALESCE(SUM(pp.valor_final), 0) AS total
-                FROM Funcionario f
-                LEFT JOIN Pedido pe ON pe.id_funcionario = f.id_funcionario
-                LEFT JOIN Pedido_Produto pp ON pp.id_pedido = pe.id_pedido
-                GROUP BY f.id_funcionario
+                SELECT
+                    fr.id_funcionario,
+                    COALESCE(SUM(pd_pr.valor_final), 0) AS total
+                FROM Funcionario fr
+                LEFT JOIN Pedido pd ON pd.id_funcionario = fr.id_funcionario
+                LEFT JOIN Pedido_Produto pd_pr ON pd_pr.id_pedido = pd.id_pedido
+                GROUP BY fr.id_funcionario
             )
-            SELECT f.nome AS funcionario,
-                   ROUND(ss.total, 2) AS total_vendido,
-                   c.nome AS categoria_maior_faturamento,
-                   CASE WHEN ss.total >= COALESCE(f.meta_mensal, 0) 
-                        THEN CONCAT(f.perc_comp, '%')
-		                ELSE CONCAT(ROUND(f.perc_comp / 2, 2), '%') END AS percentual_comissao,
-                   CASE WHEN ss.total >= COALESCE(f.meta_mensal, 0)
-                        THEN ROUND((f.perc_comp / 100) * ss.total, 2)
-                        ELSE ROUND((f.perc_comp / 200) * ss.total, 2) END AS comissao,
-                   CASE WHEN ss.total >= COALESCE(f.meta_mensal, 0)
-                        THEN ROUND(f.salario + ((f.perc_comp / 100) * ss.total), 2)
-                        ELSE ROUND(f.salario + ((f.perc_comp / 200) * ss.total), 2) END AS salario_final
-            FROM Funcionario f
-            JOIN sum_sell_func ss ON ss.id_funcionario = f.id_funcionario
-            JOIN best_category bc ON bc.id_funcionario = f.id_funcionario
-            JOIN Categoria c ON c.id_categoria = bc.id_categoria
+
+            SELECT fr.nome AS funcionario,
+                   ss.total,
+                   ct.nome AS categoria,
+
+                   CASE
+                       WHEN ss.total >= COALESCE(fr.meta_mensal, 0) THEN
+                           CONCAT(fr.perc_comp, '%')
+                       ELSE
+                           CONCAT(ROUND(fr.perc_comp / 2, 2), '%')
+                   END AS percentual_comissao,
+
+                   CASE
+                       WHEN ss.total >= COALESCE(fr.meta_mensal, 0) THEN
+                           ROUND((fr.perc_comp / 100) * ss.total, 2)
+                       ELSE
+                           ROUND((fr.perc_comp / 200 ) * ss.total, 2)
+                   END AS comissao,
+
+                   CASE
+                       WHEN ss.total >= COALESCE(fr.meta_mensal, 0) THEN
+                           ROUND(((fr.perc_comp / 100) * ss.total) + fr.salario, 2)
+                       ELSE
+                           ROUND(((fr.perc_comp / 200 ) * ss.total) + fr.salario, 2)
+                   END AS salario_final
+
+            FROM Funcionario fr
+            JOIN sum_sell_func ss
+                ON fr.id_funcionario = ss.id_funcionario
+            JOIN best_category bc
+                ON fr.id_funcionario = bc.id_funcionario
+            JOIN categoria ct
+                ON bc.id_categoria = ct.id_categoria
             WHERE bc.posicao = 1
             ORDER BY salario_final DESC;
         `;
-        res.json((await db.query(sql)).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
 app.get("/api/relatorios/q5", async (req, res) => {
     try {
         const sql = `
-            WITH FaturamentoTotal AS (
-                SELECT SUM(pag.valor) AS total_geral
-                FROM Pagamento pag
-                JOIN Pedido ped ON pag.id_pedido = ped.id_pedido
-                WHERE pag.status = 'Pago' AND ped.status <> 'Cancelado'
-            ),
-            MetricasPagamento AS (
-                SELECT 
-                    pag.tipo AS tipo_pagamento,
-                    COUNT(DISTINCT ped.id_pedido) AS qtd_pedidos_pagos,
-                    SUM(pp.qtd_comp) AS qtd_total_produtos,
-                    SUM(pag.valor) AS valor_total_recebido,
-                    AVG(pag.valor) AS ticket_medio
-                FROM Pagamento pag
-                JOIN Pedido ped ON pag.id_pedido = ped.id_pedido
-                JOIN Pedido_Produto pp ON ped.id_pedido = pp.id_pedido
-                WHERE pag.status = 'Pago' AND ped.status <> 'Cancelado'
-                GROUP BY pag.tipo
+            WITH total_geral AS (
+                SELECT SUM(pd_pr2.valor_final) AS total
+                FROM Pedido_Produto pd_pr2
+                JOIN Pedido pd2 ON pd2.id_pedido = pd_pr2.id_pedido
+                WHERE pd2.status <> 'Cancelado'
             )
-            SELECT 
-                mp.tipo_pagamento,
-                mp.qtd_pedidos_pagos,
-                mp.qtd_total_produtos,
-                ROUND(mp.valor_total_recebido, 2) AS valor_total_recebido,
-                ROUND(mp.ticket_medio, 2) AS ticket_medio,
-                ROUND((mp.valor_total_recebido * 100.0) / ft.total_geral, 2) AS percentual_total
-            FROM MetricasPagamento mp
-            CROSS JOIN FaturamentoTotal ft
-            ORDER BY valor_total_recebido DESC;
+
+            SELECT pg.tipo,
+                   COUNT(DISTINCT pd.id_pedido) AS qtd_pedidos,
+                   COUNT(pd_pr.id_produto) AS qtd_produtos,
+                   SUM(pd_pr.valor_final) AS valor_total,
+                   ROUND(
+                       SUM(pd_pr.valor_final) /
+                       COUNT(DISTINCT pd.id_pedido),
+                       2
+                   ) AS ticket_medio,
+                   CONCAT(
+                       ROUND(
+                           SUM(pd_pr.valor_final) / tg.total * 100,
+                           2
+                       ),
+                       '%'
+                   ) AS percent_total
+
+            FROM Pagamento pg
+            JOIN Pedido pd
+                ON pg.id_pedido = pd.id_pedido
+            JOIN Pedido_Produto pd_pr
+                ON pd.id_pedido = pd_pr.id_pedido
+            CROSS JOIN total_geral tg
+
+            WHERE pg.status = 'Pago'
+              AND pd.status <> 'Cancelado'
+
+            GROUP BY pg.tipo, tg.total
+
+            ORDER BY valor_total DESC;
         `;
-        res.json((await db.query(sql)).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
 app.get("/api/relatorios/q6", async (req, res) => {
     try {
         const sql = `
-            SELECT pe.canal_compra, pg.tipo AS metodo_pagamento,
-                   COUNT(pe.id_pedido) AS qtd_pedidos,
-                   SUM(pg.valor) AS receita_total,
-                   ROUND(AVG(pg.valor), 2) AS ticket_medio
-            FROM Pedido pe
-            JOIN Pagamento pg ON pe.id_pedido = pg.id_pedido
-            WHERE pg.status = 'Pago'
-            GROUP BY pe.canal_compra, pg.tipo
-            ORDER BY receita_total DESC;
+            WITH vendas_fornecedor AS (
+                SELECT fr.id_fornecedor,
+                       SUM(pd_pr.valor_final) AS total_vendas
+                FROM Fornecedor fr
+                JOIN Produto pr ON pr.id_fornecedor = fr.id_fornecedor
+                JOIN Pedido_Produto pd_pr ON pd_pr.id_produto = pr.id_produto
+                JOIN Pedido pd ON pd_pr.id_pedido = pd.id_pedido
+                WHERE pd.status <> 'Cancelado'
+                GROUP BY fr.id_fornecedor
+            ),
+
+            media_vendas AS (
+                SELECT AVG(total_vendas) AS media
+                FROM vendas_fornecedor
+            )
+
+            SELECT fr.nome,
+                   COUNT(DISTINCT pr.id_produto) AS qtd_prod_dist,
+                   SUM(pd_pr.qtd_comp) AS qtd_vendida,
+                   SUM(pd_pr.valor_final) AS total_vendas,
+                   ROUND(AVG(pr.preco_venda), 2) AS avg_preco_prod
+
+            FROM Fornecedor fr
+            JOIN Produto pr
+                ON pr.id_fornecedor = fr.id_fornecedor
+            JOIN Pedido_Produto pd_pr
+                ON pd_pr.id_produto = pr.id_produto
+            JOIN Pedido pd
+                ON pd_pr.id_pedido = pd.id_pedido
+            CROSS JOIN media_vendas mv
+
+            WHERE pd.status <> 'Cancelado'
+
+            GROUP BY fr.id_fornecedor, fr.nome, mv.media
+
+            HAVING SUM(pd_pr.valor_final) > mv.media
+
+            ORDER BY total_vendas DESC;
         `;
-        res.json((await db.query(sql)).rows);
-    } catch (e) { fail(res, e); }
+
+        const result = await db.query(sql);
+        res.json(result.rows);
+
+    } catch (e) {
+        fail(res, e);
+    }
 });
 
 

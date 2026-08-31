@@ -10,7 +10,7 @@
     <script>
         tailwind.config = { theme: { extend: { colors: { background: "#09090b", card: "#18181b", border: "#27272a", muted: "#a1a1aa", primary: "#3b82f6" } } } }
     </script>
-   
+
 </head>
 
 <body>
@@ -1078,7 +1078,7 @@
                     await api(`/api/clientes/${id || ""}/telefone`, {
                         method: "POST",
                         body: JSON.stringify({ telefone: b.telefone })
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
 
                 resetForm("form-cli");
@@ -1202,14 +1202,14 @@
                                 <select class="input-field" onchange="itemProduct(${i},this.value)">
                                     <option value="">Produto</option>
                                     ${products
-                                        .map(
-                                            (p) => `
+                            .map(
+                                (p) => `
                                                 <option value="${p.id_produto}" ${String(x.id_produto) === String(p.id_produto) ? "selected" : ""}>
                                                     ${esc(p.nome)}
                                                 </option>
                                             `
-                                        )
-                                        .join("")}
+                            )
+                            .join("")}
                                 </select>
                             </td>
                             <td class="p-2">
@@ -1250,8 +1250,8 @@
                 (soma, x) =>
                     soma +
                     Number(x.qtd_comp) *
-                        Number(x.preco_unit || 0) *
-                        (1 - Number(x.desconto || 0) / 100),
+                    Number(x.preco_unit || 0) *
+                    (1 - Number(x.desconto || 0) / 100),
                 0
             );
             $("ped-total").textContent = money(total);
@@ -1410,7 +1410,8 @@
             }
         }
 
-        // DASHBOARD
+        
+       // DASHBOARD
         async function tableReport(title, url, cols, extra = "") {
             try {
                 const d = await api(url);
@@ -1428,24 +1429,26 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${
-                                        d.length
-                                            ? d
-                                                  .map(
-                                                      (r) => `
-                                                        <tr>
-                                                            ${cols
-                                                                .map(
-                                                                    (c) =>
-                                                                        `<td class="p-3">${c.money ? money(r[c.key]) : c.date ? fmtDate(r[c.key]) : esc(r[c.key])}</td>`
-                                                                )
-                                                                .join("")}
-                                                        </tr>
-                                                    `
-                                                  )
-                                                  .join("")
-                                            : `<tr><td colspan="${cols.length}" class="p-5 text-center small">Nenhum resultado.</td></tr>`
-                                    }
+                                    ${d.length
+                        ? d
+                            .map(
+                                (r) => `
+                                    <tr>
+                                        ${cols
+                                        .map((c) => {
+                                            let val = r[c.key];
+                                            if (c.money) return `<td class="p-3">${money(val)}</td>`;
+                                            if (c.date) return `<td class="p-3">${fmtDate(val)}</td>`;
+                                            if (c.decimal) return `<td class="p-3">${Number(val || 0).toFixed(2).replace('.', ',')}</td>`;
+                                            return `<td class="p-3">${esc(val)}</td>`;
+                                        })
+                                        .join("")}
+                                    </tr>
+                                `
+                            )
+                            .join("")
+                        : `<tr><td colspan="${cols.length}" class="p-5 text-center small">Nenhum resultado.</td></tr>`
+                    }
                                 </tbody>
                             </table>
                         </div>
@@ -1462,35 +1465,47 @@
 
             let h = "";
 
+            // Q1 Adicionada 
             h += await tableReport(
-                "1. Produtos acima da média da categoria",
+                "1. Vendas Acima da Média por Categoria",
                 "/api/relatorios/q1",
                 [
                     { key: "categoria", label: "Categoria" },
                     { key: "produto", label: "Produto" },
-                    { key: "quantidade_total_vendida", label: "Qtd. total vendida" },
-                    { key: "media_vendas_categoria", label: "Média da categoria" },
-                    { key: "diferenca", label: "Diferença" }
+                    { key: "soma", label: "Qtd. Vendida" },
+                    { key: "media", label: "Média", decimal: true },
+                    { key: "diferenca", label: "Diferença", decimal: true }
                 ],
-                "Ordenado pela diferença decrescente."
+                "Identifica produtos cuja quantidade total vendida supera a média da sua respectiva categoria."
             );
 
-            h += `
-                <div class="card overflow-hidden">
-                    <div class="p-5 border-b border-border">
-                        <h3 class="text-xl font-semibold">2. Clientes que adquiriram todos os produtos disponíveis de uma categoria</h3>
-                        <div class="flex gap-2 mt-3">
-                            <select id="dash-cat" class="input-field max-w-sm">
-                                ${(window.S?.categorias || [])
-                                    .map((x) => `<option value="${x.id_categoria}">${esc(x.nome)}</option>`)
-                                    .join("")}
-                            </select>
-                            <button class="btn-primary" onclick="loadQ2()">Consultar</button>
-                        </div>
-                    </div>
-                    <div id="q2-box" class="p-5 small">Selecione uma categoria.</div>
-                </div>
-            `;
+            h += await tableReport(
+                "2. Clientes que adquiriram todos os produtos disponíveis da categoria",
+                "/api/relatorios/q2",
+                [
+                    {
+                        key: "nome",
+                        label: "Cliente"
+                    },
+                    {
+                        key: "qtd_prod_distc",
+                        label: "Produtos distintos"
+                    },
+                    {
+                        key: "total_gasto",
+                        label: "Total gasto",
+                        money: true
+                    },
+                    {
+                        key: "ultima_compra",
+                        label: "Última compra",
+                        date: true
+                    }
+                ],
+                "Consulta referente à categoria de código 1."
+            );
+
+           
 
             h += await tableReport(
                 "3. Estoque abaixo do mínimo por armazém",
@@ -1500,19 +1515,20 @@
                     { key: "nome", label: "Armazém" },
                     { key: "cidade", label: "Cidade" },
                     { key: "qtd_under_min", label: "Qtd. abaixo do mínimo" },
-                    { key: "qtd_media_disp", label: "Média disponível" },
+                    { key: "qtd_media_disp", label: "Média disponível", decimal: true },
                     { key: "preco_medio", label: "Preço médio", money: true }
                 ],
                 "Somente produtos disponíveis e acima do preço médio geral."
             );
 
+            // Chaves atualizadas para "total" e "categoria" conforme a API
             h += await tableReport(
                 "4. Desempenho dos funcionários e comissão",
                 "/api/relatorios/q4",
                 [
                     { key: "funcionario", label: "Funcionário" },
-                    { key: "total_vendido", label: "Total vendido", money: true },
-                    { key: "categoria_maior_faturamento", label: "Maior faturamento" },
+                    { key: "total", label: "Total vendido", money: true },
+                    { key: "categoria", label: "Maior faturamento" }, 
                     { key: "percentual_comissao", label: "% comissão" },
                     { key: "comissao", label: "Comissão", money: true },
                     { key: "salario_final", label: "Salário final", money: true }
@@ -1520,67 +1536,75 @@
                 "Ordenado pelo salário final decrescente."
             );
 
-            h += await tableReport("5. Desempenho por Método de Pagamento", "/api/relatorios/q5", [
-                { key: 'tipo_pagamento', label: 'Tipo Pagamento' }, 
-                { key: 'qtd_pedidos_pagos', label: 'Qtd Pedidos' }, 
-                { key: 'qtd_total_produtos', label: 'Produtos Vendidos' }, 
-                { key: 'valor_total_recebido', label: 'Total Recebido', isCurrency: true, money: true }, 
-                { key: 'ticket_medio', label: 'Ticket Médio', isCurrency: true, money: true },
-                { key: 'percentual_total', label: '% do Total' }
-            ],
-            "Ordedado pelo valorr total recebido em ordem decrescente."
-        );
+            h += await tableReport(
+                "5. Desempenho por método de pagamento",
+                "/api/relatorios/q5",
+                [
+                    { key: "tipo", label: "Tipo de pagamento" },
+                    { key: "qtd_pedidos", label: "Pedidos pagos" },
+                    { key: "qtd_produtos", label: "Produtos vendidos" },
+                    { key: "valor_total", label: "Valor total recebido", money: true },
+                    { key: "ticket_medio", label: "Ticket médio", money: true },
+                    { key: "percent_total", label: "% do total" }
+                ],
+                "Somente pagamentos com status Pago associados a pedidos não cancelados. Ordenado pelo valor total recebido em ordem decrescente."
+            );
 
-            h += await tableReport("6. Receita por canal e forma de pagamento", "/api/relatorios/q6", [
-                { key: "canal_compra", label: "Canal" },
-                { key: "metodo_pagamento", label: "Pagamento" },
-                { key: "qtd_pedidos", label: "Pedidos" },
-                { key: "receita_total", label: "Receita", money: true },
-                { key: "ticket_medio", label: "Ticket médio", money: true }
-            ]);
+            h += await tableReport(
+                "6. Desempenho dos fornecedores",
+                "/api/relatorios/q6",
+                [
+                    { key: "nome", label: "Fornecedor" },
+                    { key: "qtd_prod_dist", label: "Produtos distintos" },
+                    { key: "qtd_vendida", label: "Unidades vendidas" },
+                    { key: "total_vendas", label: "Total de vendas", money: true },
+                    { key: "avg_preco_prod", label: "Preço médio", money: true }
+                ],
+                "Somente fornecedores com vendas acima da média. Ordenado pelo total de vendas em ordem decrescente."
+            );
 
             c.innerHTML = h;
         }
-
         async function loadQ2() {
-            const id = $("dash-cat").value;
-            if (!id) return;
+            const d = await api("/api/relatorios/q2");
 
-            const d = await api("/api/relatorios/q2/" + id);
             $("q2-box").innerHTML = `
-                <div class="table-wrap">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr>
-                                <th class="p-3 text-left">Cliente</th>
-                                <th class="p-3">Produtos distintos</th>
-                                <th class="p-3">Total gasto</th>
-                                <th class="p-3">Última compra</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${
-                                d.length
-                                    ? d
-                                          .map(
-                                              (x) => `
-                                                <tr>
-                                                    <td class="p-3">${esc(x.cliente)}</td>
-                                                    <td class="p-3">${x.qtd_produtos_distintos}</td>
-                                                    <td class="p-3">${money(x.total_gasto)}</td>
-                                                    <td class="p-3">${fmtDate(x.ultima_compra)}</td>
-                                                </tr>
-                                            `
-                                          )
-                                          .join("")
-                                    : `<tr><td colspan="4" class="p-5 text-center small">Nenhum cliente encontrado.</td></tr>`
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
+        <div class="table-wrap">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr>
+                        <th class="p-3 text-left">Cliente</th>
+                        <th class="p-3">Produtos distintos</th>
+                        <th class="p-3">Total gasto</th>
+                        <th class="p-3">Última compra</th>
+                    </tr>
+                </thead>
 
+                <tbody>
+                    ${d.length
+                    ? d.map(
+                        (x) => `
+                                    <tr>
+                                        <td class="p-3">${esc(x.nome)}</td>
+                                        <td class="p-3">${x.qtd_prod_distc}</td>
+                                        <td class="p-3">${money(x.total_gasto)}</td>
+                                        <td class="p-3">${fmtDate(x.ultima_compra)}</td>
+                                    </tr>
+                                `
+                    ).join("")
+                    : `
+                                <tr>
+                                    <td colspan="4" class="p-5 text-center small">
+                                        Nenhum cliente encontrado.
+                                    </td>
+                                </tr>
+                            `
+                }
+                </tbody>
+            </table>
+        </div>
+    `;
+        }
         // INIT
         document.addEventListener("DOMContentLoaded", async () => {
             try {
